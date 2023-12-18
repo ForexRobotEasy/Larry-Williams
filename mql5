@@ -1,0 +1,79 @@
+
+// Program: Larry Williams
+// Developer's Site: forexroboteasy.com
+// Development Name: Forex Robot Easy Team
+
+// Include necessary libraries
+#include <Trade\Trade.mqh>
+#include <MovingAverages\MovingAverages.mqh>
+
+// Define input parameters
+input string Symbol = 'EURUSD'; // Symbol to trade
+input ENUM_TIMEFRAMES Timeframe = PERIOD_H1; // Timeframe for the candlestick chart
+input int Period = 9; // Period for the moving average calculation
+
+// Declare global variables
+CTrade trade; // Trade object
+CMovingAverages ma; // Moving averages object
+double maPrev; // Previous moving average value
+bool tradeSignal = false; // Trading opportunity signal
+
+// Initialize the Expert Advisor
+int OnInit()
+{
+    // Set trading parameters
+    trade.SetExpertMagicNumber(123456); // Set magic number
+    trade.SetDeviationInPips(10); // Set deviation in pips
+
+    // Chart integration
+    ChartOpen(Symbol, Timeframe);
+
+    // Calculate moving average
+    ma.Create(Symbol, Timeframe, Period, MODE_EMA);
+
+    return(INIT_SUCCEEDED);
+}
+
+// Handle new tick events
+void OnTick()
+{
+    // Calculate the moving average
+    double maValue = ma.Value(0);
+
+    // Check for a change in direction
+    if ((maPrev > 0 && maValue < 0) || (maPrev < 0 && maValue > 0))
+    {
+        // Generate a trading opportunity signal
+        tradeSignal = true;
+    }
+
+    // Update the previous moving average value
+    maPrev = maValue;
+
+    // Check for a trading opportunity
+    if (tradeSignal)
+    {
+        // Place a trade
+        if (maValue > 0)
+        {
+            trade.Buy(Symbol, 0.1); // Buy 0.1 lots
+        }
+        else if (maValue < 0)
+        {
+            trade.Sell(Symbol, 0.1); // Sell 0.1 lots
+        }
+
+        // Reset the trading opportunity signal
+        tradeSignal = false;
+    }
+}
+
+// Handle the deinitialization of the Expert Advisor
+void OnDeinit(const int reason)
+{
+    // Close any open trades
+    trade.CloseAll();
+
+    // Remove the chart
+    ChartClose();
+}
